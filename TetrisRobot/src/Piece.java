@@ -23,9 +23,20 @@ public class Piece {
 	public final int recursionDepth = 5;
 	public int pieceType;
 
-	public Piece(){
+	double holeWeight;
+	double lineWeight;
+	double laneWeight;
+	double heightWeight;
+	double pieceWeight;
+
+	public Piece(double hole, double line, double lane, double height, double piece){
 		minX = 0;
 		maxX = 0;
+		holeWeight=hole;
+		lineWeight=line;
+		laneWeight=lane;
+		heightWeight=height;
+		pieceWeight=piece;
 		blocks = new boolean[5][5];
 		pieceType = -1;
 		//		blocks[3][1] = true;
@@ -36,7 +47,7 @@ public class Piece {
 	}
 
 	public Piece copySelf(){
-		Piece ret = new Piece();
+		Piece ret = new Piece(holeWeight, lineWeight, laneWeight, heightWeight, pieceWeight);
 		for(int i = 0; i < 5; i++){
 			for(int j = 0; j < 5; j++){
 				ret.blocks[i][j] = blocks[i][j];
@@ -44,6 +55,68 @@ public class Piece {
 		}
 		ret.blockRot = blockRot;
 		return ret;
+	}
+	
+	public void setPiece(int type){
+		pieceType=type;
+		switch(type){
+		case 0:
+			blocks[3][1] = true;
+			blocks[3][2] = true;
+			blocks[3][3] = true;
+			blocks[3][4] = true;
+			blockRot = false;
+			System.out.println("Long");
+			break;
+		case 1:
+			blocks[3][1] = true;
+			blocks[2][1] = true;
+			blocks[2][2] = true;
+			blocks[2][3] = true;
+			blockRot = true;
+			System.out.println("Blue L");
+			break;
+		case 2:
+			blocks[3][2] = true;
+			blocks[3][3] = true;
+			blocks[2][2] = true;
+			blocks[2][3] = true;
+			blockRot = false;
+			System.out.println("Square");
+			break;
+		case 3:
+			blocks[3][3] = true;
+			blocks[2][1] = true;
+			blocks[2][2] = true;
+			blocks[2][3] = true;
+			blockRot = true;
+			System.out.println("Orange L");
+			break;
+		case 4:
+			blocks[2][1] = true;
+			blocks[2][2] = true;
+			blocks[3][2] = true;
+			blocks[3][3] = true;
+			blockRot = true;
+			System.out.println("Green Z");
+			break;
+		case 5:
+			blocks[3][1] = true;
+			blocks[3][2] = true;
+			blocks[2][2] = true;
+			blocks[2][3] = true;
+			blockRot = true;
+			System.out.println("Red Z");
+			break;
+		case 6:
+			blocks[3][2] = true;
+			blocks[2][1] = true;
+			blocks[2][2] = true;
+			blocks[2][3] = true;
+			blockRot = true;
+			System.out.println("T");
+			break;
+		}
 	}
 
 	public void getNextPiece(int num, Robot r){
@@ -176,10 +249,7 @@ public class Piece {
 					continue;
 				int[] test;
 				boolean[][] newField = iterate(field, 0, trans);
-				if(depth == 1)
-					test = detMoveValue(field, newField, rot, trans, emergent, linesSent, hold.pieceType);
-				else{
-
+				if(depth == 1){
 					int cleared = clearLines(newField);
 					int sent = 0;
 					switch(cleared){
@@ -188,7 +258,20 @@ public class Piece {
 					case 4: sent += 3; break;
 					}
 					if(cleared > 0){
-						sent += 0;//(combo+1)/2;
+						sent += (combo+1)/2;
+					}
+					test = detMoveValue(field, newField, rot, trans, emergent, linesSent+sent, hold.pieceType);
+				}
+				else{
+					int cleared = clearLines(newField);
+					int sent = 0;
+					switch(cleared){
+					case 2: sent += 1; break;
+					case 3: sent += 2; break;
+					case 4: sent += 3; break;
+					}
+					if(cleared > 0){
+						sent += (combo+1)/2;
 					}
 					test = p[depth+1].detOptimal(newField, p, hold, depth+1, emergent, false, linesSent+sent, sent>0?combo+1:0);
 				}
@@ -216,13 +299,13 @@ public class Piece {
 			ret[5] = detHeight(field, newField);
 		}
 		else{
-			ret[3] = cleared + clearLines(newField);
+			ret[3] = cleared;
 			ret[2] = detHoleNum(newField);
 			ret[4] = detClearLanes(newField);
 			ret[5] = detTotHeight(newField);
 			ret[6] = type==0?1:0;
 		}
-		return ret;
+		return ret; 
 	}
 
 	public static int detTotHeight(boolean[][] field){
@@ -456,7 +539,7 @@ public class Piece {
 		return ret;
 	}
 
-	private static boolean smaller(int[] move1, int[] move2, boolean emergent){
+	private boolean smaller(int[] move1, int[] move2, boolean emergent){
 		if(emergent){
 			if(move1[2] < move2[2])
 				return false;
@@ -490,12 +573,6 @@ public class Piece {
 			//			int check2 = weights[move2[3]];
 			int check1 = move1[3];
 			int check2 = move2[3];
-
-			double holeWeight = -75000;
-			double lineWeight = 10000;
-			double laneWeight = -150;
-			double heightWeight = -75;
-			double pieceWeight = 1000;
 			//			holeWeight*move[2]+lineWeight*check1+laneWeight*move[4]+heightWeight*move[5]
 			double weight1 = holeWeight*move1[2]+lineWeight*check1+laneWeight*move1[4]+heightWeight*Math.pow(move1[5], 2)+pieceWeight*move1[6];
 			double weight2 = holeWeight*move2[2]+lineWeight*check2+laneWeight*move2[4]+heightWeight*Math.pow(move2[5], 2)+pieceWeight*move2[6];
